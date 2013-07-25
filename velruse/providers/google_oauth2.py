@@ -157,7 +157,7 @@ class GoogleOAuth2Provider(object):
         # Retrieve profile data if scopes allow
         profile = {}
         user_url = flat_url(
-            '%s://www.googleapis.com/oauth2/v1/userinfo' % self.protocol,
+            '%s://www.googleapis.com/oauth2/v3/userinfo' % self.protocol,
             access_token=access_token)
         r = requests.get(user_url)
 
@@ -166,15 +166,22 @@ class GoogleOAuth2Provider(object):
             profile['accounts'] = [{
                 'domain': self.domain,
                 'username': data['email'],
-                'userid': data['id']
+                'userid': data['sub']
             }]
             if 'name' in data:
                 profile['displayName'] = data['name']
             else:
                 profile['displayName'] = data['email']
             profile['preferredUsername'] = data['email']
-            profile['verifiedEmail'] = data['email']
+            if data['email_verified']:
+                profile['verifiedEmail'] = data['email']
             profile['emails'] = [{'value': data['email']}]
+            picture = data.get('picture')
+            if picture:
+                profile['photos'] = [{'value': picture}]
+            gender = data.get('gender')
+            if gender:
+                profile['gender'] = gender
 
         cred = {'oauthAccessToken': access_token,
                 'oauthRefreshToken': refresh_token}

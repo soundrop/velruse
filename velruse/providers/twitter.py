@@ -1,4 +1,6 @@
 """Twitter Authentication Views"""
+import re
+
 from pyramid.httpexceptions import HTTPFound
 from pyramid.security import NO_PERMISSION_REQUIRED
 
@@ -155,7 +157,8 @@ class TwitterProvider(object):
             if 'location' in data:
                 profile['addresses'] = [{'formatted': data['location']}]
             if 'profile_image_url' in data:
-                profile['photos'] = [{'value': data['profile_image_url']}]
+                url = data['profile_image_url']
+                profile['photos'] = [{'value': re.sub("_normal(\\..{3})$", "\\1", url)}]
             if 'utc_offset' in data:
                 offset = float(data['utc_offset']) / 3600
                 h = int(offset)

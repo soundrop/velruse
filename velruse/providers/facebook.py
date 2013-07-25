@@ -124,6 +124,7 @@ class FacebookProvider(object):
 
         # Retrieve profile data
         graph_url = flat_url('https://graph.facebook.com/me',
+                             fields='id,name,first_name,last_name,link,username,gender,birthday,email,verified,timezone,picture',
                              access_token=access_token)
         r = requests.get(graph_url)
         if r.status_code != 200:
@@ -141,21 +142,10 @@ class FacebookProvider(object):
 
 def extract_fb_data(data):
     """Extact and normalize facebook data as parsed from the graph JSON"""
-    # Setup the normalized contact info
-    nick = None
-
-    # Setup the nick and preferred username to the last portion of the
-    # FB link URL if its not their ID
-    link = data.get('link')
-    if link:
-        last = link.split('/')[-1]
-        if last != data['id']:
-            nick = last
-
     profile = {
         'accounts': [{'domain': 'facebook.com', 'userid': data['id']}],
         'displayName': data['name'],
-        'preferredUsername': nick or data['name'],
+        'preferredUsername': data.get('username') or data['name'],
     }
     gender = data.get('gender')
     if gender:
@@ -165,6 +155,9 @@ def extract_fb_data(data):
         profile['emails'] = [{'value': email, 'primary': True}]
         if data.get('verified') and email:
             profile['verifiedEmail'] = email
+    picture = data.get('picture')
+    if picture and not picture['data']['is_silhouette']:
+        profile['photos'] = [{'value': "https://graph.facebook.com/%s/picture" % data['id']}]
 
     tz = data.get('timezone')
     if tz:
